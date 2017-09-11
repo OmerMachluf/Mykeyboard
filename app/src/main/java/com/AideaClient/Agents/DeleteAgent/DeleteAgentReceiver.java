@@ -1,6 +1,6 @@
-package com.anysoftkeyboard.DeleteAgent;
+package com.AideaClient.Agents.DeleteAgent;
 
-import com.anysoftkeyboard.AgentsFramework.IAgentReceiver;
+import com.AideaClient.AgentsFramework.IAgentReceiver;
 
 /**
  * Created by krist on 03/09/2017.

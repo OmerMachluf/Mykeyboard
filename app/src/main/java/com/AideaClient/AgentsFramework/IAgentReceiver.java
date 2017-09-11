@@ -1,6 +1,4 @@
-package com.anysoftkeyboard.AgentsFramework;
-
-import java.util.List;
+package com.AideaClient.AgentsFramework;
 
 /**
  * Created by krist on 03/09/2017.

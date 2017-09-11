@@ -1,6 +1,6 @@
-package com.anysoftkeyboard.TextAgent;
+package com.AideaClient.Agents.TextAgent;
 
-import com.anysoftkeyboard.AgentsFramework.ISessionReport;
+import com.AideaClient.AgentsFramework.ISessionReport;
 
 import java.util.HashMap;
 

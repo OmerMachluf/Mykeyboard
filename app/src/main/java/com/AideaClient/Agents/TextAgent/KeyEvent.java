@@ -1,6 +1,6 @@
-package com.anysoftkeyboard.TextAgent;
+package com.AideaClient.Agents.TextAgent;
 
-import com.anysoftkeyboard.AgentsFramework.IKeyEvent;
+import com.AideaClient.AgentsFramework.IKeyEvent;
 
 /**
  * Created by krist on 04/09/2017.

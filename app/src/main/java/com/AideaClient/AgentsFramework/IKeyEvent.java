@@ -1,4 +1,4 @@
-package com.anysoftkeyboard.AgentsFramework;
+package com.AideaClient.AgentsFramework;
 
 /**
  * Created by krist on 03/09/2017.

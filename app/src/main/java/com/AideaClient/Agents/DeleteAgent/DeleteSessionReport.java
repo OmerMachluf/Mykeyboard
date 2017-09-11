@@ -1,6 +1,6 @@
-package com.anysoftkeyboard.DeleteAgent;
+package com.AideaClient.Agents.DeleteAgent;
 
-import com.anysoftkeyboard.AgentsFramework.ISessionReport;
+import com.AideaClient.AgentsFramework.ISessionReport;
 
 import java.util.HashMap;
 

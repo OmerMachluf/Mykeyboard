@@ -1,6 +1,6 @@
 package com.AideaClient.Agents.DeleteAgent;
 
-import com.AideaClient.AgentsFramework.IKeyEvent;
+import com.AideaClient.Framework.AgentsFramework.IKeyEvent;
 
 /**
  * Created by krist on 03/09/2017.

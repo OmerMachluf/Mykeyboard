@@ -1,6 +1,6 @@
 package com.AideaClient.Agents.TextAgent;
 
-import com.AideaClient.AgentsFramework.IAgentReceiver;
+import com.AideaClient.Framework.AgentsFramework.IAgentReceiver;
 
 /**
  * Created by krist on 03/09/2017.

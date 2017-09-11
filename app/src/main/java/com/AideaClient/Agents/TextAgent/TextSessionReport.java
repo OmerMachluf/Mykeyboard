@@ -1,6 +1,6 @@
 package com.AideaClient.Agents.TextAgent;
 
-import com.AideaClient.AgentsFramework.ISessionReport;
+import com.AideaClient.Framework.AgentsFramework.ISessionReport;
 
 import java.util.HashMap;
 
